@@ -32,19 +32,12 @@ namespace Platform
             app.UseRouting();
 
             app.UseEndpoints(endpoints => {
-                endpoints.MapGet("{first:alpha:length(3)}/{second:bool}", async context => {
-                    await context.Response.WriteAsync("Request Was Routed\n");
-                    foreach (var kvp in context.Request.RouteValues)
-                    {
-                        await context.Response.WriteAsync($"{kvp.Key}: {kvp.Value}\n");
-                    }
+                endpoints.Map("{number:int}", async context => {
+                    await context.Response.WriteAsync("Routed to the int endpoint");
                 });
-                endpoints.MapGet("capital/{country:countryName}", Capital.Endpoint);
-                endpoints.MapGet("size/{city?}", Population.Endpoint)
-                    .WithMetadata(new RouteNameMetadata("population"));
-
-                endpoints.MapFallback(async context => {
-                    await context.Response.WriteAsync("Routed to fallback endpoint");
+                endpoints.Map("{number:double}", async context => {
+                    await context.Response
+                    .WriteAsync("Routed to the double endpoint");
                 });
             });
 
