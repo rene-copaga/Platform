@@ -24,14 +24,15 @@ namespace Platform
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
-            //app.UseMiddleware<Population>();
-            //app.UseMiddleware<Capital>();
-
             app.UseRouting();
 
             app.UseEndpoints(endpoints => {
-                endpoints.MapGet("routing", async context => {
-                    await context.Response.WriteAsync("Request Was Routed");
+                endpoints.MapGet("{first}/{second}/{third}", async context => {
+                    await context.Response.WriteAsync("Request Was Routed\n");
+                    foreach (var kvp in context.Request.RouteValues)
+                    {
+                        await context.Response.WriteAsync($"{kvp.Key}: {kvp.Value}\n");
+                    }
                 });
                 endpoints.MapGet("capital/uk", new Capital().Invoke);
                 endpoints.MapGet("population/paris", new Population().Invoke);
