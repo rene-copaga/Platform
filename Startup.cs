@@ -25,7 +25,7 @@ namespace Platform
             app.Use(async (context, next) => {
                 if (context.Request.Path == "/middleware/function")
                 {
-                    await TextResponseFormatter.Singleton.Format(context,
+                    await TypeBroker.Formatter.Format(context,
                     "Middleware Function: It is snowing in Chicago");
                 }
                 else
@@ -37,7 +37,7 @@ namespace Platform
             app.UseEndpoints(endpoints => {
                 endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
                 endpoints.MapGet("/endpoint/function", async context => {
-                    await TextResponseFormatter.Singleton.Format(context, 
+                    await TypeBroker.Formatter.Format(context, 
                         "Endpoint Function: It is sunny in LA");
                 });
             });
