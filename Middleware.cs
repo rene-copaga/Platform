@@ -6,9 +6,9 @@ namespace Platform
     public class QueryStringMiddleWare
     {
         private RequestDelegate next;
-        public QueryStringMiddleWare(RequestDelegate nextDelegate)
+        public QueryStringMiddleWare()
         {
-            next = nextDelegate;
+            //next = nextDelegate;
         }
         public async Task Invoke(HttpContext context)
         {
@@ -17,7 +17,10 @@ namespace Platform
             {
                 await context.Response.WriteAsync("Class-based Middleware \n");
             }
-            await next(context);
+            if (next != null)
+            {
+                await next(context);
+            }
         }
     }
 }
