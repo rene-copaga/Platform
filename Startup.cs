@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using static Platform.QueryStringMiddleWare;
 
 namespace Platform
 {
@@ -23,25 +24,14 @@ namespace Platform
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
-                IOptions<MessageOptions> msgOptions)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Use(async (context, next) => {
-                if (context.Request.Path == "/location")
-                {
-                    MessageOptions opts = msgOptions.Value;
-                    await context.Response.WriteAsync($"{opts.CityName}, {opts.CountryName}");
-                }
-                else
-                {
-                    await next();
-                }
-            });
+            app.UseMiddleware<LocationMiddleware>();
 
             app.UseRouting();
 
