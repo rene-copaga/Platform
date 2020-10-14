@@ -28,7 +28,7 @@ namespace Platform
 
             app.Map("/branch", branch => {
                 branch.UseMiddleware<QueryStringMiddleWare>();
-                branch.Use(async (context, next) => {
+                branch.Run(async (context) => {
                     await context.Response.WriteAsync($"Branch Middleware");
                 });
             });
