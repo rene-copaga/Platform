@@ -4,53 +4,64 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Platform.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using static Platform.QueryStringMiddleWare;
 
 namespace Platform
 {
     public class Startup
     {
-        public Startup(IConfiguration config)
+        public Startup(IConfiguration configService)
         {
-            Configuration = config;
+            Configuration = configService;
         }
 
-        private IConfiguration Configuration;
+        private IConfiguration Configuration { get; set; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(typeof(ICollection<>), typeof(List<>));
+            services.Configure<MessageOptions>(Configuration.GetSection("Location"));
         }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
-            app.UseDeveloperExceptionPage();
-            app.UseRouting();
-            app.UseEndpoints(endpoints => {
-                endpoints.MapGet("/string", async context => {
-                    ICollection<string> collection
-                        = context.RequestServices.GetService<ICollection<string>>();
-                    collection.Add($"Request: { DateTime.Now.ToLongTimeString() }");
-                    foreach (string str in collection)
-                    {
-                        await context.Response.WriteAsync($"String: {str}\n");
-                    }
-                });
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            app.UseStaticFiles();
 
-                endpoints.MapGet("/int", async context => {
-                    ICollection<int> collection
-                        = context.RequestServices.GetService<ICollection<int>>();
-                    collection.Add(collection.Count() + 1);
-                    foreach (int val in collection)
-                    {
-                        await context.Response.WriteAsync($"Int: {val}\n");
-                    }
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new
+                    PhysicalFileProvider($"{env.ContentRootPath}/staticfiles"),
+                RequestPath = "/files"
+            });
+
+            app.UseRouting();
+
+            app.UseMiddleware<LocationMiddleware>();
+
+            app.Use(async (context, next) => {
+                string defaultDebug = Configuration["Logging:LogLevel:Default"];
+                await context.Response
+                    .WriteAsync($"The config setting is: {defaultDebug}");
+                string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
+                await context.Response
+                    .WriteAsync($"\nThe env setting is: {environ}");
+
+                string wsID = Configuration["WebService:Id"];
+                string wsKey = Configuration["WebService:Key"];
+                await context.Response.WriteAsync($"\nThe secret ID is: {wsID}");
+                await context.Response.WriteAsync($"\nThe secret Key is: {wsKey}");
+            });
+
+            app.UseEndpoints(endpoints => {
+                endpoints.MapGet("/", async context => {
+                    logger.LogDebug("Response for / started");
+                    await context.Response.WriteAsync("Hello World!");
+                    logger.LogDebug("Response for / completed");
                 });
             });
         }
