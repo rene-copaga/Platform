@@ -27,6 +27,7 @@ namespace Platform
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             app.UseDeveloperExceptionPage();
+            app.UseHttpsRedirection();
             app.UseCookiePolicy();
             app.UseMiddleware<ConsentMiddleware>();
             app.UseSession();
