@@ -1,6 +1,6 @@
 ﻿namespace Platform
 {
-    public static class ResponseStrings
+    public static class Responses
     {
         public static string DefaultResponse = @"
             <!DOCTYPE html>
