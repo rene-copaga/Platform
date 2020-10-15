@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.Services;
+using System;
 
 namespace Platform
 {
@@ -21,7 +22,12 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped<IResponseFormatter, TimeResponseFormatter>();
+            services.AddScoped<IResponseFormatter>(serviceProvider => {
+                string typeName = Configuration["services:IResponseFormatter"];
+                return (IResponseFormatter)ActivatorUtilities
+                .CreateInstance(serviceProvider, typeName == null
+                ? typeof(GuidService) : Type.GetType(typeName, true));
+            });
             services.AddScoped<ITimeStamper, DefaultTimeStamper>();
         }
 
