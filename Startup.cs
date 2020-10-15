@@ -27,7 +27,7 @@ namespace Platform
                 if (context.Request.Path == "/middleware/function")
                 {
                     IResponseFormatter formatter 
-                        = app.ApplicationServices.GetService<IResponseFormatter>();
+                        = context.RequestServices.GetService<IResponseFormatter>();
                     await formatter.Format(context,
                         "Middleware Function: It is snowing in Chicago");
                 }
@@ -42,7 +42,7 @@ namespace Platform
 
                 endpoints.MapGet("/endpoint/function", async context => {
                     IResponseFormatter formatter
-                        = app.ApplicationServices.GetService<IResponseFormatter>();
+                        = context.RequestServices.GetService<IResponseFormatter>();
                     await formatter.Format(context, 
                         "Endpoint Function: It is sunny in LA");
                 });
