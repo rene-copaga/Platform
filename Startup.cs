@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.Services;
 using System;
+using System.Linq;
 
 namespace Platform
 {
@@ -22,13 +23,10 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped<IResponseFormatter>(serviceProvider => {
-                string typeName = Configuration["services:IResponseFormatter"];
-                return (IResponseFormatter)ActivatorUtilities
-                .CreateInstance(serviceProvider, typeName == null
-                ? typeof(GuidService) : Type.GetType(typeName, true));
-            });
             services.AddScoped<ITimeStamper, DefaultTimeStamper>();
+            services.AddScoped<IResponseFormatter, TextResponseFormatter>();
+            services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
+            services.AddScoped<IResponseFormatter, GuidService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -36,30 +34,17 @@ namespace Platform
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
-            app.UseMiddleware<WeatherMiddleware>();
-
-            app.Use(async (context, next) => {
-                if (context.Request.Path == "/middleware/function")
-                {
-                    IResponseFormatter formatter 
-                        = context.RequestServices.GetService<IResponseFormatter>();
-                    await formatter.Format(context,
-                        "Middleware Function: It is snowing in Chicago");
-                }
-                else
-                {
-                    await next();
-                }
-            });
-
             app.UseEndpoints(endpoints => {
-                endpoints.MapEndpoint<WeatherEndpoint>("/endpoint/class");
+                endpoints.MapGet("/single", async context => {
+                    IResponseFormatter formatter = context.RequestServices
+                        .GetService<IResponseFormatter>();
+                    await formatter.Format(context, "Single service");
+                });
 
-                endpoints.MapGet("/endpoint/function", async context => {
-                    IResponseFormatter formatter
-                        = context.RequestServices.GetService<IResponseFormatter>();
-                    await formatter.Format(context, 
-                        "Endpoint Function: It is sunny in LA");
+                endpoints.MapGet("/", async context => {
+                    IResponseFormatter formatter = context.RequestServices
+                        .GetServices<IResponseFormatter>().First(f => f.RichOutput);
+                    await formatter.Format(context, "Multiple services");
                 });
             });
         }
