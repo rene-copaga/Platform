@@ -32,16 +32,15 @@ namespace Platform
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
+            //app.UseDeveloperExceptionPage();
+            app.UseExceptionHandler("/error.html");
+            if (env.IsProduction())
             {
                 app.UseHsts();
             }
             app.UseHttpsRedirection();
             app.UseCookiePolicy();
+            app.UseStaticFiles();
             app.UseMiddleware<ConsentMiddleware>();
             app.UseSession();
 
