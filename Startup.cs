@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Platform
@@ -23,10 +24,7 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped<ITimeStamper, DefaultTimeStamper>();
-            services.AddScoped<IResponseFormatter, TextResponseFormatter>();
-            services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
-            services.AddScoped<IResponseFormatter, GuidService>();
+            services.AddSingleton(typeof(ICollection<>), typeof(List<>));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -35,16 +33,24 @@ namespace Platform
             app.UseDeveloperExceptionPage();
             app.UseRouting();
             app.UseEndpoints(endpoints => {
-                endpoints.MapGet("/single", async context => {
-                    IResponseFormatter formatter = context.RequestServices
-                        .GetService<IResponseFormatter>();
-                    await formatter.Format(context, "Single service");
+                endpoints.MapGet("/string", async context => {
+                    ICollection<string> collection
+                        = context.RequestServices.GetService<ICollection<string>>();
+                    collection.Add($"Request: { DateTime.Now.ToLongTimeString() }");
+                    foreach (string str in collection)
+                    {
+                        await context.Response.WriteAsync($"String: {str}\n");
+                    }
                 });
 
-                endpoints.MapGet("/", async context => {
-                    IResponseFormatter formatter = context.RequestServices
-                        .GetServices<IResponseFormatter>().First(f => f.RichOutput);
-                    await formatter.Format(context, "Multiple services");
+                endpoints.MapGet("/int", async context => {
+                    ICollection<int> collection
+                        = context.RequestServices.GetService<ICollection<int>>();
+                    collection.Add(collection.Count() + 1);
+                    foreach (int val in collection)
+                    {
+                        await context.Response.WriteAsync($"Int: {val}\n");
+                    }
                 });
             });
         }
