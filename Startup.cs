@@ -17,7 +17,7 @@ namespace Platform
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
@@ -26,8 +26,10 @@ namespace Platform
             app.Use(async (context, next) => {
                 if (context.Request.Path == "/middleware/function")
                 {
+                    IResponseFormatter formatter 
+                        = app.ApplicationServices.GetService<IResponseFormatter>();
                     await formatter.Format(context,
-                    "Middleware Function: It is snowing in Chicago");
+                        "Middleware Function: It is snowing in Chicago");
                 }
                 else
                 {
@@ -36,10 +38,11 @@ namespace Platform
             });
 
             app.UseEndpoints(endpoints => {
-                //endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
                 endpoints.MapEndpoint<WeatherEndpoint>("/endpoint/class");
 
                 endpoints.MapGet("/endpoint/function", async context => {
+                    IResponseFormatter formatter
+                        = app.ApplicationServices.GetService<IResponseFormatter>();
                     await formatter.Format(context, 
                         "Endpoint Function: It is sunny in LA");
                 });
