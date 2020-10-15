@@ -5,10 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Platform.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.Extensions.Logging;
 using static Platform.QueryStringMiddleWare;
 
 namespace Platform
@@ -26,7 +23,7 @@ namespace Platform
         {
             services.Configure<MessageOptions>(Configuration.GetSection("Location"));
         }
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {
@@ -52,7 +49,9 @@ namespace Platform
 
             app.UseEndpoints(endpoints => {
                 endpoints.MapGet("/", async context => {
+                    logger.LogDebug("Response for / started");
                     await context.Response.WriteAsync("Hello World!");
+                    logger.LogDebug("Response for / completed");
                 });
             });
         }
