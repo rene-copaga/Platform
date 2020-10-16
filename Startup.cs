@@ -31,6 +31,7 @@ namespace Platform
 
             services.AddDbContext<CalculationContext>(opts => {
                 opts.UseSqlServer(Configuration["ConnectionStrings:CalcConnection"]);
+                opts.EnableSensitiveDataLogging(true);
             });
             services.AddTransient<SeedData>();
         }
