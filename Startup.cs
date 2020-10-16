@@ -1,71 +1,67 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
+using Platform.Models;
+using Platform.Services;
 
 namespace Platform
 {
     public class Startup
     {
+        public Startup(IConfiguration config)
+        {
+            Configuration = config;
+        }
+        private IConfiguration Configuration { get; set; }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<CookiePolicyOptions>(opts => {
-                opts.CheckConsentNeeded = context => true;
+            services.AddDistributedSqlServerCache(opts => {
+                opts.ConnectionString
+                    = Configuration["ConnectionStrings:CacheConnection"];
+                opts.SchemaName = "dbo";
+                opts.TableName = "DataCache";
             });
+            services.AddResponseCaching();
+            services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
 
-            services.AddDistributedMemoryCache();
-
-            services.AddSession(options => {
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
-                options.Cookie.IsEssential = true;
+            services.AddDbContext<CalculationContext>(opts => {
+                opts.UseSqlServer(Configuration["ConnectionStrings:CalcConnection"]);
+                opts.EnableSensitiveDataLogging(true);
             });
-
-            services.AddHsts(opts => {
-                opts.MaxAge = TimeSpan.FromDays(1);
-                opts.IncludeSubDomains = true;
-            });
-
-            services.Configure<HostFilteringOptions>(opts => {
-                opts.AllowedHosts.Clear();
-                opts.AllowedHosts.Add("*.example.com");
-            });
+            services.AddTransient<SeedData>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+        public void Configure(IApplicationBuilder app,
+                IHostApplicationLifetime lifetime, IWebHostEnvironment env,
+                SeedData seedData)
         {
-            //app.UseDeveloperExceptionPage();
-            app.UseExceptionHandler("/error.html");
-            if (env.IsProduction())
-            {
-                app.UseHsts();
-            }
-            app.UseHttpsRedirection();
-            app.UseStatusCodePages("text/html", Responses.DefaultResponse);
-            app.UseCookiePolicy();
+            app.UseDeveloperExceptionPage();
+            app.UseResponseCaching();
             app.UseStaticFiles();
-            app.UseMiddleware<ConsentMiddleware>();
-            app.UseSession();
+            app.UseRouting();
+            app.UseEndpoints(endpoints => {
 
-            app.Use(async (context, next) => {
-                if (context.Request.Path == "/error")
-                {
-                    context.Response.StatusCode = StatusCodes.Status404NotFound;
-                    await Task.CompletedTask;
-                }
-                else
-                {
-                    await next();
-                }
+                endpoints.MapEndpoint<SumEndpoint>("/sum/{count:int=1000000000}");
+
+                endpoints.MapGet("/", async context => {
+                    await context.Response.WriteAsync("Hello World!");
+                });
             });
 
-            app.Run(context => {
-                throw new Exception("Something has gone wrong");
-            });
+            bool cmdLineInit = (Configuration["INITDB"] ?? "false") == "true";
+            if (env.IsDevelopment() || cmdLineInit)
+            {
+                seedData.SeedDatabase();
+                if (cmdLineInit)
+                {
+                    lifetime.StopApplication();
+                }
+            }
         }
     }
 }
